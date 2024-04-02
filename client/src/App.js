@@ -4,11 +4,14 @@ import shortid from 'shortid';
 
 const App = () => {
   const [socket, setSocket] = useState();
-  const [tasks, setTasks] = useState([{id: '1', name: 'Shopping'}]);
+  const [tasks, setTasks] = useState([]);
   const [taskName, setTaskName] = useState('');
 
   useEffect(() => {
       const socket = io('ws://localhost:8000', { transports: ['websocket'] });
+      socket.on('updateData', (newTasks) => setTasks(newTasks));
+      socket.on('addTask', (newTask) => addTask(newTask));
+      socket.on('removeTask', (taskId) => removeTask(taskId));
       setSocket(socket);
 
       return () => {
@@ -16,15 +19,14 @@ const App = () => {
       };
   }, []);
 
-  const removeTask = (taskId) => {
+  const removeTask = (taskId, update = false) => {
     console.log('remove tasks: ', taskId);
     setTasks(tasks => tasks.filter(task => task.id !== taskId));
-    socket.emit('removeTask', taskId);
+    update && socket.emit('removeTask', taskId);
   }
 
   const addTask = (newTask) => {
-    setTasks(tasks => tasks.push(newTask));
-//   setTasks(tasks => [...tasks, newTask]);
+    setTasks(tasks => [...tasks, newTask]);
     console.log('Added new task: ', newTask, tasks);
   }
 
@@ -48,7 +50,7 @@ const App = () => {
   
         <ul className="tasks-section__list" id="tasks-list">
           {tasks.map(item => <li key={item.id} className="task"> {item.name}
-                                <button className="btn btn--red" onClick={() => removeTask(item.id)}>Remove</button>
+                                <button className="btn btn--red" onClick={() => removeTask(item.id, true)}>Remove</button>
                               </li>)}          
         </ul>
   
